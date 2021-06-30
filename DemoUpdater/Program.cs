@@ -20,30 +20,27 @@ namespace HashDirectory
 
             webClient.DownloadFile(@"https://raw.githubusercontent.com/kirN-dev/WorkPlace/master/patch.xml", patchPath);
 
-
-            //https://github.com/kirN-dev/WorkPlace/blob/master/patch.xml
-
-
             CheckFiles(patchPath);
 
             //CreatePatchFile(version, workPath, patchPath);
 
+        }
+        private static byte[] GetHash(FileInfo fileInfo)
+        {
+            using (var hasher = SHA256.Create())
+            {
+                using (var stream = fileInfo.OpenRead())
+                {
+                    return hasher.ComputeHash(stream);
+                };
+            }
         }
 
         private static void CreatePatchFile(string version, string workPath, string patchPath)
         {
             var directory = new DirectoryInfo(workPath);
 
-            byte[] GetHash(FileInfo fileInfo)
-            {
-                using (var hasher = SHA256.Create())
-                {
-                    using (var stream = fileInfo.OpenRead())
-                    {
-                        return hasher.ComputeHash(stream);
-                    };
-                }
-            }
+            
 
             var infos = from file in directory.EnumerateFiles("*", SearchOption.AllDirectories)
                         let hash = GetHash(file)
@@ -81,23 +78,80 @@ namespace HashDirectory
                 {
                     if (childNode.Attributes.Count > 0)
                     {
-                        XmlNode attr = childNode.Attributes.GetNamedItem("path");
-                        if (attr == null)
+                        XmlNode attrPath = childNode.Attributes.GetNamedItem("path");
+
+                        if (attrPath == null)
                             return;
 
-                        if (!File.Exists(attr.Value))
+                        if (!File.Exists(attrPath.Value))
                         {
                             try
                             {
                                 WebClient webClient = new WebClient();
-                                webClient.DownloadFile(@"https://github.com/kirN-dev/WorkPlace/", attr.Value);
+
+                                string directoryName = Path.GetDirectoryName(attrPath.Value);
+                                Directory.CreateDirectory(directoryName);
+                                string fileName = Path.GetFileName(attrPath.Value);
+
+                                int index = attrPath.Value.LastIndexOf("WorkPlace");
+                                string path = attrPath.Value.Substring(index + "WorkPlace".Length);
+
+                                webClient.DownloadFile(@"https://raw.githubusercontent.com/kirN-dev/WorkPlace/master" + "/" + path, attrPath.Value);
                             }
                             catch (Exception)
                             {
 
                                 throw;
                             }
-                            
+
+                        }
+
+                        XmlNode attrLength = childNode.Attributes.GetNamedItem("length");
+                        XmlNode attrHash = childNode.Attributes.GetNamedItem("hash");
+                        FileInfo fileInfo = new FileInfo(attrPath.Value);
+
+                        if (attrLength.Value != fileInfo.Length.ToString())
+                        {
+                            try
+                            {
+                                WebClient webClient = new WebClient();
+
+                                string directoryName = Path.GetDirectoryName(attrPath.Value);
+                                Directory.CreateDirectory(directoryName);
+                                string fileName = Path.GetFileName(attrPath.Value);
+
+                                int index = attrPath.Value.LastIndexOf("WorkPlace");
+                                string path = attrPath.Value.Substring(index + "WorkPlace".Length);
+
+                                webClient.DownloadFile(@"https://raw.githubusercontent.com/kirN-dev/WorkPlace/master" + "/" + path, attrPath.Value);
+                            }
+                            catch (Exception)
+                            {
+
+                                throw;
+                            }
+                        }
+                        var p = GetHash(fileInfo).Select(b => b.ToString("X2")).ToArray();
+                        if (attrHash.Value != string.Join("", p))
+                        {
+                            try
+                            {
+                                WebClient webClient = new WebClient();
+
+                                string directoryName = Path.GetDirectoryName(attrPath.Value);
+                                Directory.CreateDirectory(directoryName);
+                                string fileName = Path.GetFileName(attrPath.Value);
+
+                                int index = attrPath.Value.LastIndexOf("WorkPlace");
+                                string path = attrPath.Value.Substring(index + "WorkPlace".Length);
+
+                                webClient.DownloadFile(@"https://raw.githubusercontent.com/kirN-dev/WorkPlace/master" + "/" + path, attrPath.Value);
+                            }
+                            catch (Exception)
+                            {
+
+                                throw;
+                            }
                         }
                     }
                 }
