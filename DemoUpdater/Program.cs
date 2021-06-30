@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Security.Cryptography;
 using System.Xml;
 using System.Xml.Linq;
@@ -15,8 +16,22 @@ namespace HashDirectory
             string workPath = @"C:\Users\Silvan\Desktop\TestProject\WorkPlace";
             string patchPath = AppDomain.CurrentDomain.BaseDirectory + "\\patch.xml";
 
+            WebClient webClient = new WebClient();
+
+            webClient.DownloadFile(@"https://raw.githubusercontent.com/kirN-dev/WorkPlace/master/patch.xml", patchPath);
+
+
+            //https://github.com/kirN-dev/WorkPlace/blob/master/patch.xml
+
+
             CheckFiles(patchPath);
 
+            //CreatePatchFile(version, workPath, patchPath);
+
+        }
+
+        private static void CreatePatchFile(string version, string workPath, string patchPath)
+        {
             var directory = new DirectoryInfo(workPath);
 
             byte[] GetHash(FileInfo fileInfo)
@@ -51,8 +66,6 @@ namespace HashDirectory
             {
                 xDocSave.Document.Save(writer);
             }
-
-
         }
 
         private static void CheckFiles(string patchPath)
@@ -69,8 +82,23 @@ namespace HashDirectory
                     if (childNode.Attributes.Count > 0)
                     {
                         XmlNode attr = childNode.Attributes.GetNamedItem("path");
-                        if (attr != null)
-                            Console.WriteLine(File.Exists(attr.Value));
+                        if (attr == null)
+                            return;
+
+                        if (!File.Exists(attr.Value))
+                        {
+                            try
+                            {
+                                WebClient webClient = new WebClient();
+                                webClient.DownloadFile(@"https://github.com/kirN-dev/WorkPlace/", attr.Value);
+                            }
+                            catch (Exception)
+                            {
+
+                                throw;
+                            }
+                            
+                        }
                     }
                 }
             }
