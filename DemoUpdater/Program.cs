@@ -6,7 +6,7 @@ using System.Security.Cryptography;
 using System.Xml;
 using System.Xml.Linq;
 
-namespace HashDirectory
+namespace DemoUpdater
 {
     class Program
     {
@@ -39,8 +39,6 @@ namespace HashDirectory
         private static void CreatePatchFile(string version, string workPath, string patchPath)
         {
             var directory = new DirectoryInfo(workPath);
-
-            
 
             var infos = from file in directory.EnumerateFiles("*", SearchOption.AllDirectories)
                         let hash = GetHash(file)
