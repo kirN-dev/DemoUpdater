@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -35,32 +36,52 @@ namespace DemoUpdater
                 };
             }
         }
+        class FileHash
+        {
+            public FileInfo File { get; set; }
+            public byte[] Hash { get; set; }
+        }
 
-        private static void CreatePatchFile(string version, string workPath, string patchPath)
+        private static void CreatePatchFile(string gameVersion, string workPath, string patchPath)
         {
             var directory = new DirectoryInfo(workPath);
 
-            var infos = from file in directory.EnumerateFiles("*", SearchOption.AllDirectories)
-                        let hash = GetHash(file)
-                        select new { File = file, Hash = hash };
+            IEnumerable<FileHash> data = GetCurrentFileHash(directory);
 
-            var declaration = new XDeclaration("1.0", "UTF-8", null);
-
-            var data = new XElement("data", infos.Select(x =>
-                        new XElement("file",
-                            new XAttribute("path", x.File.FullName),
-                            new XAttribute("length", x.File.Length),
-                            new XAttribute("hash", string.Join("", x.Hash.Select(b => b.ToString("X2")).ToArray())))
-                            ));
-
-            var gameVerison = new XElement("game", new XAttribute("version", version), new XElement(data));
-
-            XDocument xDocSave = new XDocument(declaration, gameVerison);
+            XDocument xDocSave = CreateXmlDocument(gameVersion, data);
 
             using (StreamWriter writer = new StreamWriter(patchPath))
             {
                 xDocSave.Document.Save(writer);
             }
+        }
+
+        private static XDocument CreateXmlDocument(string gameVersion, IEnumerable<FileHash> listFiles)
+        {
+            var declaration = new XDeclaration("1.0", "UTF-8", null);
+
+            var data = new XElement("data", listFiles.Select(x =>
+                        new XElement("file",
+                            new XAttribute("path", x.File.FullName),
+                            new XAttribute("length", x.File.Length),
+                            new XAttribute("hash", FormatHash(x.Hash)))
+                            ));
+
+            var gameVerison = new XElement("game", new XAttribute("version", gameVersion), new XElement(data));
+
+            return new XDocument(declaration, gameVerison);
+        }
+
+        private static string FormatHash(byte[] hashArray)
+        {
+            return string.Join("", hashArray.Select(b => b.ToString("X2")).ToArray());
+        }
+
+        private static IEnumerable<FileHash> GetCurrentFileHash(DirectoryInfo directory)
+        {
+            return from file in directory.EnumerateFiles("*", SearchOption.AllDirectories)
+                   let hash = GetHash(file)
+                   select new FileHash { File = file, Hash = hash };
         }
 
         private static void CheckFiles(string patchPath)
@@ -87,12 +108,8 @@ namespace DemoUpdater
                             {
                                 WebClient webClient = new WebClient();
 
-                                string directoryName = Path.GetDirectoryName(attrPath.Value);
-                                Directory.CreateDirectory(directoryName);
-                                string fileName = Path.GetFileName(attrPath.Value);
-
                                 int index = attrPath.Value.LastIndexOf("WorkPlace");
-                                string path = attrPath.Value.Substring(index + "WorkPlace".Length);
+                                string path = attrPath.Value[(index + "WorkPlace".Length)..];
 
                                 webClient.DownloadFile(@"https://raw.githubusercontent.com/kirN-dev/WorkPlace/master" + "/" + path, attrPath.Value);
                             }
@@ -114,10 +131,6 @@ namespace DemoUpdater
                             {
                                 WebClient webClient = new WebClient();
 
-                                string directoryName = Path.GetDirectoryName(attrPath.Value);
-                                Directory.CreateDirectory(directoryName);
-                                string fileName = Path.GetFileName(attrPath.Value);
-
                                 int index = attrPath.Value.LastIndexOf("WorkPlace");
                                 string path = attrPath.Value.Substring(index + "WorkPlace".Length);
 
@@ -129,16 +142,12 @@ namespace DemoUpdater
                                 throw;
                             }
                         }
-                        var p = GetHash(fileInfo).Select(b => b.ToString("X2")).ToArray();
-                        if (attrHash.Value != string.Join("", p))
+                        var hash = GetHash(fileInfo);
+                        if (attrHash.Value != FormatHash(hash))
                         {
                             try
                             {
                                 WebClient webClient = new WebClient();
-
-                                string directoryName = Path.GetDirectoryName(attrPath.Value);
-                                Directory.CreateDirectory(directoryName);
-                                string fileName = Path.GetFileName(attrPath.Value);
 
                                 int index = attrPath.Value.LastIndexOf("WorkPlace");
                                 string path = attrPath.Value.Substring(index + "WorkPlace".Length);

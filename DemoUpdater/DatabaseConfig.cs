@@ -17,7 +17,7 @@ namespace DemoUpdater
                  .SetBasePath(Directory.GetCurrentDirectory())
                  .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
             var configuration = configurationBuilder.Build();
-            _workerPath = configuration["WorkerPath"];
+            _workerPath = configuration["GamePath"];
             return _workerPath;
         }
     }
