@@ -8,17 +8,15 @@ using System.Threading.Tasks;
 
 namespace DemoUpdater
 {
-    class Configuration
+    class Configurater
     {
-        private static string _workerPath;
-        public static string GetWorkerPath()
+        public IConfigurationRoot ConfigurationRoot { get; }
+        public Configurater()
         {
             IConfigurationBuilder configurationBuilder = new ConfigurationBuilder()
                  .SetBasePath(Directory.GetCurrentDirectory())
                  .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
-            var configuration = configurationBuilder.Build();
-            _workerPath = configuration["GamePath"];
-            return _workerPath;
+            ConfigurationRoot = configurationBuilder.Build();
         }
     }
 }
