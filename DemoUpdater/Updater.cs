@@ -37,8 +37,10 @@ namespace DemoUpdater
 
             if (CheckVersion(xRoot))
             {
-                return;
+                //return;
             }
+
+            ChangeGameVersion(xRoot);
 
             //TODO: Реализовать при сохранении, от сюда убрать
             string GetSourcePath(string savePath)
@@ -59,9 +61,6 @@ namespace DemoUpdater
                     #region Поправить часть кода
                     XmlNode attrPath = childNode.Attributes.GetNamedItem("path");
 
-                    if (attrPath == null)
-                        continue;
-
                     //Исправить
                     var temp2 = GamePath + GetSourcePath(attrPath.Value);
                     var temp1 = temp2.Replace(Path.GetFileName(attrPath.Value), "");
@@ -69,40 +68,51 @@ namespace DemoUpdater
                     {
                         Directory.CreateDirectory(temp1);
 
-                        Downloader.DownloadUpdateFile(ServerPath, temp2);
+                        Downloader.DownloadUpdateFile(GetSourcePath(attrPath.Value), temp2, ServerPath);
                         continue;
                     }
 
-                    XmlNode attrLenght = childNode.Attributes.GetNamedItem("lenght");
+                    XmlNode attrLenght = childNode.Attributes.GetNamedItem("length");
 
-                    if (attrLenght == null)
-                        continue;
-
-                    FileInfo fileInfo = new FileInfo(attrPath.Value);
+                    FileInfo fileInfo = new FileInfo(temp2);
 
                     if (attrLenght.Value != fileInfo.Length.ToString())
                     {
-                        Downloader.DownloadUpdateFile(ServerPath, attrPath.Value);
+                        Downloader.DownloadUpdateFile(GetSourcePath(attrPath.Value), temp2, ServerPath);
                         continue;
                     }
 
                     XmlNode attrHash = childNode.Attributes.GetNamedItem("hash");
 
-                    if (attrHash == null)
-                        continue;
-
                     if (attrHash.Value != FormatHash(GetHash(fileInfo)))
                     {
-                        Downloader.DownloadUpdateFile(ServerPath, attrPath.Value);
+                        Downloader.DownloadUpdateFile(GetSourcePath(attrPath.Value), temp2, ServerPath);
                     }
                     #endregion
                 }
             }
         }
 
+        private static void ChangeGameVersion(XmlElement xRoot)
+        {
+            string newVersion = xRoot.GetAttribute("version");
+            string settingsPath = Path.Combine(Directory.GetCurrentDirectory(), "appsettings.json");
+            string json;
+
+            using (StreamReader reader = new StreamReader(settingsPath))
+            {
+                json = reader.ReadToEnd().Replace(Configuration.GameVersion, newVersion);
+            }
+
+            using (StreamWriter writer = new StreamWriter(settingsPath))
+            {
+                writer.WriteLine(json);
+            }
+        }
+
         private bool CheckVersion(XmlElement xRoot)
         {
-            return xRoot.GetAttribute("version") != GameVersion;
+            return xRoot.GetAttribute("version") == GameVersion;
         }
 
         private bool AttributeExists(XmlNode childNode)

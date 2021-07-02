@@ -12,9 +12,9 @@ namespace DemoUpdater
             _webClient.DownloadFile(adress, savePath);
         }
 
-        public static void DownloadUpdateFile(string root, string savePath)
+        public static void DownloadUpdateFile(string root, string savePath, string serverPath)
         {
-            string source = GetSourceFile(root, savePath);
+            string source = Configuration.ServerPath + root;
             _webClient.DownloadFile(source, savePath);
         }
 

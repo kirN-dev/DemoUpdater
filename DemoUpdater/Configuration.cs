@@ -12,6 +12,14 @@ namespace DemoUpdater
 
         public static string GamePath { get => _configurationRoot["GamePath"]; }
         public static string ServerPath { get => _configurationRoot["ServerPath"]; }
-        public static string GameVersion { get => _configurationRoot["GameVersion"]; }
+        public static string GameVersion
+        {
+            get => _configurationRoot["GameVersion"];
+            set
+            {
+                _configurationRoot["GameVersion"] = value;
+                _configurationRoot.Reload();
+            }
+        }
     }
 }
