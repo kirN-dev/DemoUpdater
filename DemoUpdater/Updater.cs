@@ -14,13 +14,15 @@ namespace DemoUpdater
         public string GamePath { get; }
         public string PatchPath { get; }
         public string ServerPath { get; }
+        public string UpdateRoot { get; }
 
         public Updater()
         {
             GameVersion = Configuration.GameVersion;
             GamePath = Configuration.GamePath;
-            PatchPath = Path.Combine(GamePath, "patch.xml");
+            PatchPath = Path.Combine(Directory.GetCurrentDirectory(), "patch.xml");
             ServerPath = Configuration.ServerPath;
+            UpdateRoot = Configuration.UpdateRoot;
 
             if (!File.Exists(PatchPath))
                 Directory.CreateDirectory(GamePath);
@@ -35,19 +37,13 @@ namespace DemoUpdater
 
             XmlElement xRoot = xDocLoad.DocumentElement;
 
-            if (CheckVersion(xRoot))
-            {
-                //return;
-            }
-
             ChangeGameVersion(xRoot);
 
-            //TODO: Реализовать при сохранении, от сюда убрать
-            string GetSourcePath(string savePath)
+           
+            string GetSourcePath(string patchSavePath)
             {
-                //TODO: Исправить
-                int index = savePath.LastIndexOf("WorkPlace");
-                return savePath[(index + "WorkPlace".Length)..];
+                int index = patchSavePath.LastIndexOf(UpdateRoot);
+                return patchSavePath[(index + UpdateRoot.Length)..];
             }
 
             foreach (XmlNode xnode in xRoot)
@@ -57,28 +53,27 @@ namespace DemoUpdater
                     if (!AttributeExists(childNode))
                         continue;
 
-                    //TODO:
-                    #region Поправить часть кода
                     XmlNode attrPath = childNode.Attributes.GetNamedItem("path");
+                    
+                    string rootPatchPath = GetSourcePath(attrPath.Value);
+                    string localFilePath = GamePath + rootPatchPath;
+                    string localDirectoryPath = Directory.GetParent(localFilePath).FullName;
 
-                    //Исправить
-                    var temp2 = GamePath + GetSourcePath(attrPath.Value);
-                    var temp1 = temp2.Replace(Path.GetFileName(attrPath.Value), "");
-                    if (!File.Exists(temp2))
+                    if (!File.Exists(localFilePath))
                     {
-                        Directory.CreateDirectory(temp1);
+                        Directory.CreateDirectory(localDirectoryPath);
 
-                        Downloader.DownloadUpdateFile(GetSourcePath(attrPath.Value), temp2, ServerPath);
+                        Downloader.DownloadUpdateFile(rootPatchPath, localFilePath);
                         continue;
                     }
 
                     XmlNode attrLenght = childNode.Attributes.GetNamedItem("length");
 
-                    FileInfo fileInfo = new FileInfo(temp2);
+                    FileInfo fileInfo = new FileInfo(localFilePath);
 
                     if (attrLenght.Value != fileInfo.Length.ToString())
                     {
-                        Downloader.DownloadUpdateFile(GetSourcePath(attrPath.Value), temp2, ServerPath);
+                        Downloader.DownloadUpdateFile(rootPatchPath, localFilePath);
                         continue;
                     }
 
@@ -86,9 +81,8 @@ namespace DemoUpdater
 
                     if (attrHash.Value != FormatHash(GetHash(fileInfo)))
                     {
-                        Downloader.DownloadUpdateFile(GetSourcePath(attrPath.Value), temp2, ServerPath);
+                        Downloader.DownloadUpdateFile(rootPatchPath, localFilePath);
                     }
-                    #endregion
                 }
             }
         }
