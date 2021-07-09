@@ -9,7 +9,7 @@ namespace DemoUpdater
             Updater updater = new Updater();
 
             updater.UpdateFiles();
-
+            
             //updater.CreatePatchFile();
 
         }
