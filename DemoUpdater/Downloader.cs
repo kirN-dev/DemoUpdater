@@ -14,7 +14,8 @@ namespace DemoUpdater
 
         public static void DownloadUpdateFile(string root, string savePath)
         {
-            string source = Configuration.ServerPath + root;
+            string server = Configuration.ServerPath;
+            string source = server + root;
             _webClient.DownloadFile(source, savePath);
         }
     }

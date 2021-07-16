@@ -20,7 +20,7 @@ namespace DemoUpdater
         {
             GameVersion = Configuration.GameVersion;
             GamePath = Configuration.GamePath;
-            PatchPath = Path.Combine(Directory.GetCurrentDirectory(), "patch.xml");
+            PatchPath = Path.Combine(GamePath, "patch.xml");
             ServerPath = Configuration.ServerPath;
             UpdateRoot = Configuration.UpdateRoot;
 
