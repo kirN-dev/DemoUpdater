@@ -16,6 +16,8 @@ namespace DemoUpdater
         public string ServerPath { get; }
         public string UpdateRoot { get; }
 
+        public event EventHandler<UpdateFileEventArgs> UpdateProgressChanged;
+
         public Updater()
         {
             GameVersion = Configuration.GameVersion;
@@ -39,50 +41,43 @@ namespace DemoUpdater
 
             ChangeGameVersion(xRoot);
 
-           
+
             string GetSourcePath(string patchSavePath)
             {
                 int index = patchSavePath.LastIndexOf(UpdateRoot);
                 return patchSavePath[(index + UpdateRoot.Length)..];
             }
 
+            int currentProgress = 0;
             foreach (XmlNode xnode in xRoot)
             {
                 foreach (XmlNode childNode in xnode.ChildNodes)
                 {
+                    UpdateProgressChanged?.Invoke(this, new UpdateFileEventArgs(xnode.ChildNodes.Count, currentProgress));
+
                     if (!AttributeExists(childNode))
                         continue;
 
                     XmlNode attrPath = childNode.Attributes.GetNamedItem("path");
-                    
+                    XmlNode attrLenght = childNode.Attributes.GetNamedItem("length");
+                    XmlNode attrHash = childNode.Attributes.GetNamedItem("hash");
+
                     string rootPatchPath = GetSourcePath(attrPath.Value);
                     string localFilePath = GamePath + rootPatchPath;
                     string localDirectoryPath = Directory.GetParent(localFilePath).FullName;
 
-                    if (!File.Exists(localFilePath))
+                    FileInfo fileInfo = new FileInfo(localFilePath);
+
+                    if (!File.Exists(localFilePath) ||
+                        attrLenght.Value != fileInfo.Length.ToString() ||
+                        attrHash.Value != FormatHash(GetHash(fileInfo)))
                     {
                         Directory.CreateDirectory(localDirectoryPath);
 
                         Downloader.DownloadUpdateFile(rootPatchPath, localFilePath);
-                        continue;
                     }
 
-                    XmlNode attrLenght = childNode.Attributes.GetNamedItem("length");
-
-                    FileInfo fileInfo = new FileInfo(localFilePath);
-
-                    if (attrLenght.Value != fileInfo.Length.ToString())
-                    {
-                        Downloader.DownloadUpdateFile(rootPatchPath, localFilePath);
-                        continue;
-                    }
-
-                    XmlNode attrHash = childNode.Attributes.GetNamedItem("hash");
-
-                    if (attrHash.Value != FormatHash(GetHash(fileInfo)))
-                    {
-                        Downloader.DownloadUpdateFile(rootPatchPath, localFilePath);
-                    }
+                    currentProgress++;
                 }
             }
         }
