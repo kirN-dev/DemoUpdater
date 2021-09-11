@@ -12,8 +12,7 @@ namespace DemoUpdater
 
             updater.UpdateFiles();
             
-            //updater.CreatePatchFile();
-
+            updater.CreatePatchFile();
         }
 
         private static void Updater_UpdateProgressChanged(object sender, UpdateFileEventArgs e)
